@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather App - Flask</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; }
+      form { margin-bottom: 1rem; padding: 0.75rem; border: 1px solid #ddd; }
+      .row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+      label { display: flex; flex-direction: column; min-width: 180px; }
+      input { padding: 0.45rem; }
+      button { padding: 0.5rem 0.75rem; cursor: pointer; }
+      table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+      th, td { border: 1px solid #ddd; padding: 0.5rem; vertical-align: top; }
+      .success { color: #0d7a2b; margin-bottom: 0.5rem; }
+      .error { color: #b00020; margin-bottom: 0.5rem; }
+      .actions { display: flex; gap: 0.5rem; }
+      .exports a { margin-right: 0.75rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Weather App (Flask)</h1>
+
+    {% if message %}
+      <div class="success">{{ message }}</div>
+    {% endif %}
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <h2>Create request</h2>
+    <form method="post" action="/ui/create">
+      <div class="row">
+        <label>
+          Location
+          <input name="location" placeholder="City, postal code, landmark..." required />
+        </label>
+        <label>
+          Start date
+          <input type="date" name="start_date" required />
+        </label>
+        <label>
+          End date
+          <input type="date" name="end_date" required />
+        </label>
+      </div>
+      <button type="submit">Save request</button>
+    </form>
+
+    <div class="exports">
+      <strong>Export:</strong>
+      <a href="/api/export/json">JSON</a>
+      <a href="/api/export/csv">CSV</a>
+      <a href="/api/export/md">Markdown</a>
+    </div>
+
+    <h2>Records</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Location</th>
+          <th>Period</th>
+          <th>Weather</th>
+          <th>Integrations</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td>{{ row.id }}</td>
+            <td>
+              <div><strong>Input:</strong> {{ row.input_location }}</div>
+              <div><strong>Resolved:</strong> {{ row.resolved_location }}</div>
+              <div><strong>Coords:</strong> {{ row.latitude }}, {{ row.longitude }}</div>
+            </td>
+            <td>{{ row.start_date }} to {{ row.end_date }}</td>
+            <td>
+              <div>Current: {{ row.current_temperature_c }} °C</div>
+              <div>Wind: {{ row.current_wind_speed }} km/h</div>
+              <div>Min (range): {{ row.temperature_min_c }} °C</div>
+              <div>Max (range): {{ row.temperature_max_c }} °C</div>
+            </td>
+            <td>
+              {% if row.map_url %}
+                <div><a href="{{ row.map_url }}" target="_blank">Google Maps</a></div>
+              {% endif %}
+              {% if row.place_summary %}
+                <div>{{ row.place_summary[:180] }}{% if row.place_summary|length > 180 %}...{% endif %}</div>
+              {% endif %}
+            </td>
+            <td>
+              <form method="post" action="/ui/{{ row.id }}/update">
+                <div class="row">
+                  <label>
+                    Location
+                    <input name="location" value="{{ row.input_location }}" required />
+                  </label>
+                  <label>
+                    Start
+                    <input type="date" name="start_date" value="{{ row.start_date }}" required />
+                  </label>
+                  <label>
+                    End
+                    <input type="date" name="end_date" value="{{ row.end_date }}" required />
+                  </label>
+                </div>
+                <div class="actions">
+                  <button type="submit">Update</button>
+                </div>
+              </form>
+              <form method="post" action="/ui/{{ row.id }}/delete">
+                <button type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="6">No records yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </body>
+</html>
